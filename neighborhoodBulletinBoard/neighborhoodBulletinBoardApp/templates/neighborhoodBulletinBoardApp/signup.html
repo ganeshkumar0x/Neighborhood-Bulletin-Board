@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Neighborhood Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+        }
+        form {
+            background-color: rgba(15, 23, 42, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 100%;
+        }
+        label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #cbd5e1;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #334155;
+            color: #e2e8f0;
+        }
+        input::placeholder {
+            color: #94a3b8;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #2563eb;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #notification {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            color: #fff;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        #notification.success {
+            background-color: #22c55e;
+        }
+        #notification.error {
+            background-color: #ef4444;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Sign Up</h1>
+    <form id="signUpForm" autocomplete="off">
+        {% csrf_token %}
+        <label for="username">Username:</label>
+        <input type="text" name="username" placeholder="john_doe" required>
+        <label for="email">Email:</label>
+        <input type="email" name="email" placeholder="john.doe@example.com" required>
+        <label for="password">Password:</label>
+        <input type="password" name="password" placeholder="strongpassword123" required autocomplete="new-password">
+        <label for="location">Location:</label>
+        <input type="text" name="location" placeholder="New York" required>
+        <button type="submit">Sign Up</button>
+    </form>
+    <div id="notification"></div>
+    <script>
+        $(document).ready(function () {
+            $("#signUpForm").submit(function (e) {
+                e.preventDefault();
+                const formData = {
+                    username: $("input[name='username']").val(),
+                    email: $("input[name='email']").val(),
+                    password: $("input[name='password']").val(),
+                    location: $("input[name='location']").val(),
+                    csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val(),
+                };
+                $.ajax({
+                    url: "/graphql/",
+                    type: "POST",
+                    data: {
+                        query:
+                            `mutation {
+                                signUp(username:"${formData.username}", email:"${formData.email}",
+                                       password:"${formData.password}", location:"${formData.location}") {
+                                    success
+                                    message
+                                }
+                            }`,
+                        csrfmiddlewaretoken: formData.csrfmiddlewaretoken,
+                    },
+                    success(response) {
+                        const notification = $("#notification");
+                        if (response.data.signUp.success) {
+                            notification.text("Sign Up successful! Redirecting to Sign In...");
+                            notification.removeClass("error").addClass("success");
+                            notification.fadeIn();
+                            setTimeout(function () {
+                                window.location.href = "/signin/";
+                            }, 1500);
+                        } else {
+                            notification.text(response.data.signUp.message);
+                            notification.removeClass("success").addClass("error");
+                            notification.fadeIn();
+                        }
+                    },
+                    error(xhr, status, error) {
+                        const notification = $("#notification");
+                        notification.text("An error occurred while signing up.");
+                        notification.removeClass("success").addClass("error");
+                        notification.fadeIn();
+                    },
+                });
+            });
+        });
+    </script>
+</body>
+</html>
